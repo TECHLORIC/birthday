@@ -30,6 +30,7 @@
   let scratchCardInitialized = false;
   let bouquetInitialized = false;
   let soundtrackInitialized = false;
+  let isPlayingVinyl = false;
   let musicNotesInterval = null;
 
   // DOM Elements for all 9 screens
@@ -127,13 +128,41 @@
     if (audioToggleBtn) {
       audioToggleBtn.addEventListener('click', toggleMusic);
     }
+
+    // Attempt autoplay immediately when link is opened
+    if (CONFIG.AUDIO_URL) {
+      playMusic(CONFIG.AUDIO_URL);
+    }
+
+    // Fallback: If browser autoplay policy blocks unprompted audio,
+    // start music automatically on the very first tap/click anywhere on page
+    const unlockOnFirstInteraction = () => {
+      if (audioEl && audioEl.paused && currentStep < 8) {
+        playMusic(CONFIG.AUDIO_URL);
+      }
+      window.removeEventListener('click', unlockOnFirstInteraction);
+      window.removeEventListener('touchstart', unlockOnFirstInteraction);
+      window.removeEventListener('pointerdown', unlockOnFirstInteraction);
+      window.removeEventListener('keydown', unlockOnFirstInteraction);
+    };
+
+    window.addEventListener('click', unlockOnFirstInteraction, { once: true });
+    window.addEventListener('touchstart', unlockOnFirstInteraction, { once: true });
+    window.addEventListener('pointerdown', unlockOnFirstInteraction, { once: true });
+    window.addEventListener('keydown', unlockOnFirstInteraction, { once: true });
   }
 
   function playMusic(trackUrl = null) {
     if (!audioEl) return;
     initAudioContext();
-    if (trackUrl && audioEl.src !== trackUrl) {
-      audioEl.src = trackUrl;
+    if (trackUrl) {
+      const tempA = document.createElement('a');
+      tempA.href = trackUrl;
+      if (audioEl.src !== tempA.href) {
+        audioEl.src = trackUrl;
+      }
+    } else if (!audioEl.src && CONFIG.AUDIO_URL) {
+      audioEl.src = CONFIG.AUDIO_URL;
     }
     audioEl.play().then(() => {
       isAudioPlaying = true;
@@ -1076,12 +1105,67 @@
     const lyricsList = document.getElementById('soundtrack-lyrics-list');
     const trackTitle = document.getElementById('soundtrack-title');
     const trackArtist = document.getElementById('soundtrack-artist');
-    const btnReplayAll = document.getElementById('btn-replay-all');
     const notesContainer = document.getElementById('music-notes-container');
 
     const soundtrack = CONFIG.SOUNDTRACK || {};
+    const soundtrackTrack = soundtrack.audioUrl || "./assets/music/first.mp3";
     if (trackTitle) trackTitle.textContent = soundtrack.songTitle || "Our Song";
     if (trackArtist) trackArtist.textContent = soundtrack.artist || `${CONFIG.YOUR_NAME} & ${CONFIG.BIRTHDAY_PERSON}`;
+
+    function startMusicNotes() {
+      stopMusicNotes();
+      const noteSymbols = ['♪', '♫', '♬', '♩', '✨'];
+      musicNotesInterval = setInterval(() => {
+        if (!notesContainer) return;
+        const note = document.createElement('div');
+        note.className = 'music-note';
+        note.textContent = noteSymbols[Math.floor(Math.random() * noteSymbols.length)];
+        note.style.left = `${35 + Math.random() * 30}%`;
+        note.style.bottom = '80px';
+        notesContainer.appendChild(note);
+
+        setTimeout(() => {
+          note.remove();
+        }, 3500);
+      }, 600);
+    }
+
+    function stopMusicNotes() {
+      if (musicNotesInterval) {
+        clearInterval(musicNotesInterval);
+        musicNotesInterval = null;
+      }
+    }
+
+    function startVinylPlayer() {
+      isPlayingVinyl = true;
+      if (tonearm) tonearm.classList.add('playing');
+      if (vinylDisc) vinylDisc.classList.add('spinning');
+      if (btnVinylPlay) {
+        btnVinylPlay.innerHTML = `<span>⏸ Pause Our Song</span>`;
+      }
+      playMusic(soundtrackTrack);
+      startMusicNotes();
+    }
+
+    function stopVinylPlayer() {
+      isPlayingVinyl = false;
+      if (tonearm) tonearm.classList.remove('playing');
+      if (vinylDisc) vinylDisc.classList.remove('spinning');
+      if (btnVinylPlay) {
+        btnVinylPlay.innerHTML = `<span>▶ Play Our Song</span>`;
+      }
+      pauseMusic();
+      stopMusicNotes();
+    }
+
+    function toggleVinylPlayer() {
+      if (isPlayingVinyl) {
+        stopVinylPlayer();
+      } else {
+        startVinylPlayer();
+      }
+    }
 
     if (!soundtrackInitialized) {
       soundtrackInitialized = true;
@@ -1097,72 +1181,21 @@
         });
       }
 
-      let isPlayingVinyl = false;
-
-      function toggleVinylPlayer() {
-        isPlayingVinyl = !isPlayingVinyl;
-
-        if (isPlayingVinyl) {
-          // Needle moves onto record, vinyl spins
-          if (tonearm) tonearm.classList.add('playing');
-          if (vinylDisc) vinylDisc.classList.add('spinning');
-          if (btnVinylPlay) {
-            btnVinylPlay.innerHTML = `<span>⏸ Pause Our Song</span>`;
-          }
-
-          // Play specific soundtrack audio if defined
-          const track = soundtrack.audioUrl || CONFIG.AUDIO_URL;
-          playMusic(track);
-
-          // Start floating musical notes
-          startMusicNotes();
-        } else {
-          // Needle moves off, vinyl stops
-          if (tonearm) tonearm.classList.remove('playing');
-          if (vinylDisc) vinylDisc.classList.remove('spinning');
-          if (btnVinylPlay) {
-            btnVinylPlay.innerHTML = `<span>▶ Play Our Song</span>`;
-          }
-          pauseMusic();
-          stopMusicNotes();
-        }
-      }
-
       if (vinylDisc) vinylDisc.addEventListener('click', toggleVinylPlayer);
       if (tonearm) tonearm.addEventListener('click', toggleVinylPlayer);
       if (btnVinylPlay) btnVinylPlay.addEventListener('click', toggleVinylPlayer);
 
-      function startMusicNotes() {
-        stopMusicNotes();
-        const noteSymbols = ['♪', '♫', '♬', '♩', '✨'];
-        musicNotesInterval = setInterval(() => {
-          if (!notesContainer) return;
-          const note = document.createElement('div');
-          note.className = 'music-note';
-          note.textContent = noteSymbols[Math.floor(Math.random() * noteSymbols.length)];
-          note.style.left = `${35 + Math.random() * 30}%`;
-          note.style.bottom = '80px';
-          notesContainer.appendChild(note);
-
-          setTimeout(() => {
-            note.remove();
-          }, 3500);
-        }, 600);
-      }
-
-      function stopMusicNotes() {
-        if (musicNotesInterval) {
-          clearInterval(musicNotesInterval);
-          musicNotesInterval = null;
-        }
-      }
       const btnSoundtrackContinue = document.getElementById('btn-soundtrack-continue');
       if (btnSoundtrackContinue) {
         btnSoundtrackContinue.addEventListener('click', () => {
+          stopVinylPlayer();
           goToStep(9);
         });
       }
     }
+
+    // Automatically start playing first.mp3 when entering Our Soundtrack section
+    startVinylPlayer();
   }
 
   // ==========================================================================
@@ -1248,6 +1281,7 @@
             videoEl.currentTime = 0;
           }
           goToStep(1);
+          playMusic(CONFIG.AUDIO_URL);
         });
       }
     }

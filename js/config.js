@@ -18,7 +18,7 @@ const CONFIG = {
 
   // 3. BACKGROUND MUSIC (Landing & Initial Journey)
   // Provide a local path (e.g., "./assets/music/song.mp3") or a web URL to an MP3.
-  AUDIO_URL: "./assets/music/first.mp3",
+  AUDIO_URL: "./assets/music/bg.mp3",
 
   // 4. BALLOON REASONS (Section 3: "Reasons We Love You")
   // 5 or 6 sweet reasons. Each balloon pops to reveal one card.
