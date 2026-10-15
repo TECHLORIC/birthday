@@ -1,0 +1,12 @@
+# Operating System Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary / Download Files
+*.crdownload
+*.tmp
+*.part
+
+# Vercel
+.vercel

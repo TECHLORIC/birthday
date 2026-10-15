@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Happy Birthday! ✨ A Special Surprise</title>
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            romantic: {
+              rose: '#ff758f',
+              blush: '#ffb3c1',
+              gold: '#ffd700',
+              cream: '#fffdf9',
+              dark: '#0c0f1d'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Canvas Confetti Library via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+  <!-- Custom CSS Animations & Styles -->
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+
+<body class="night-sky min-h-screen text-slate-100 flex flex-col selection:bg-pink-500 selection:text-white">
+
+  <!-- ==========================================================================
+       ✨ BACKGROUND ATMOSPHERE (STARS & AMBIENT GLOW - FIXED LAYER)
+       ========================================================================== -->
+  <div class="background-stars-container">
+    <div class="star-field"></div>
+    <div class="ambient-glow-1"></div>
+    <div class="ambient-glow-2"></div>
+  </div>
+
+  <!-- ==========================================================================
+       🎵 FLOATING AUDIO CONTROLLER & DEV PREVIEW TOGGLE
+       ========================================================================== -->
+  <!-- Audio element for background music -->
+  <!-- NOTE: You can change the song URL in js/config.js (AUDIO_URL) -->
+  <audio id="bg-audio" loop preload="auto"></audio>
+
+  <!-- Dev Preview Mode Toggle (Allows bypassing countdown anytime during testing) -->
+  <div class="fixed top-4 left-4 z-50">
+    <button 
+      id="preview-badge" 
+      class="text-[11px] font-medium px-3 py-1.5 rounded-full border border-white/20 bg-white/10 backdrop-blur-md text-white/80 hover:bg-white/20 transition-all shadow-lg flex items-center gap-1.5"
+      title="Click to toggle between Countdown (Locked) and Gift (Unlocked) for testing"
+    >
+      <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+      <span>Preview Mode: OFF (Live Date)</span>
+    </button>
+  </div>
+
+  <!-- Floating Music Toggle Button -->
+  <button 
+    id="audio-toggle-btn" 
+    class="audio-toggle-btn" 
+    aria-label="Toggle Background Music"
+    title="Toggle Background Music"
+  >
+    <div id="audio-equalizer" class="audio-equalizer paused">
+      <div class="equalizer-bar"></div>
+      <div class="equalizer-bar"></div>
+      <div class="equalizer-bar"></div>
+      <div class="equalizer-bar"></div>
+    </div>
+  </button>
+
+  <!-- Main Content Container (Vertically scrollable with generous bottom padding) -->
+  <main class="relative z-10 w-full max-w-lg mx-auto min-h-[100dvh] flex flex-col items-center justify-start pt-10 pb-32 px-4 sm:px-6">
+
+    <!-- ========================================================================
+         SCREEN 1: THE GATEKEEPER (COUNTDOWN OR GIFT UNLOCK)
+         ======================================================================== -->
+    <section id="screen-gatekeeper" class="section-screen active flex-col items-center text-center">
+      
+      <!-- State A: Before Midnight (Countdown Timer) -->
+      <div id="gatekeeper-countdown-state" class="w-full flex flex-col items-center">
+        <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass-pill text-xs font-semibold tracking-wider text-pink-300 uppercase mb-6 shadow-sm">
+          <span>✨</span>
+          <span>A Secret Birthday Surprise</span>
+          <span>✨</span>
+        </div>
+
+        <h1 class="font-serif text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white mb-3">
+          For <span class="celebrant-name text-transparent bg-clip-text bg-gradient-to-r from-pink-300 via-rose-300 to-amber-200">Susan</span>
+        </h1>
+
+        <p class="text-base sm:text-lg text-slate-300/90 font-light max-w-sm mb-8 leading-relaxed">
+          The surprise unlocks at midnight 🎈.<br />
+          <span class="italic text-pink-200/80">Some things are worth the wait.</span>
+        </p>
+
+        <!-- Live Countdown Cards -->
+        <div class="grid grid-cols-4 gap-2.5 sm:gap-4 w-full max-w-sm mb-8">
+          <div class="glass-panel rounded-2xl p-3 sm:p-4 flex flex-col items-center">
+            <span id="cd-days" class="text-2xl sm:text-3xl font-bold tracking-tight text-pink-200 font-mono">00</span>
+            <span class="text-[10px] sm:text-xs uppercase tracking-wider text-slate-400 mt-1">Days</span>
+          </div>
+          <div class="glass-panel rounded-2xl p-3 sm:p-4 flex flex-col items-center">
+            <span id="cd-hours" class="text-2xl sm:text-3xl font-bold tracking-tight text-pink-200 font-mono">00</span>
+            <span class="text-[10px] sm:text-xs uppercase tracking-wider text-slate-400 mt-1">Hours</span>
+          </div>
+          <div class="glass-panel rounded-2xl p-3 sm:p-4 flex flex-col items-center">
+            <span id="cd-minutes" class="text-2xl sm:text-3xl font-bold tracking-tight text-pink-200 font-mono">00</span>
+            <span class="text-[10px] sm:text-xs uppercase tracking-wider text-slate-400 mt-1">Mins</span>
+          </div>
+          <div class="glass-panel rounded-2xl p-3 sm:p-4 flex flex-col items-center">
+            <span id="cd-seconds" class="text-2xl sm:text-3xl font-bold tracking-tight text-amber-300 font-mono animate-pulse">00</span>
+            <span class="text-[10px] sm:text-xs uppercase tracking-wider text-slate-400 mt-1">Secs</span>
+          </div>
+        </div>
+
+        <p class="text-xs text-slate-400/80 italic">
+          Tip: Tap the "Preview Mode" badge in the top-left to test the unlocked state anytime.
+        </p>
+      </div>
+
+      <!-- State B: After Midnight (Gift Unlocked!) -->
+      <div id="gatekeeper-unlocked-state" class="hidden w-full flex-col items-center">
+        <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass-pill text-xs font-semibold tracking-wider text-amber-300 uppercase mb-6 shadow-sm">
+          <span>🎉</span>
+          <span>Midnight Has Arrived!</span>
+          <span>🎉</span>
+        </div>
+
+        <h1 class="font-serif text-3xl sm:text-5xl font-bold text-white mb-3">
+          Happy Birthday, <span class="celebrant-name text-transparent bg-clip-text bg-gradient-to-r from-pink-300 via-rose-300 to-amber-200">babyy</span>!
+        </h1>
+
+        <p class="text-base sm:text-lg text-slate-300/90 font-light max-w-sm mb-8 leading-relaxed">
+          Your special day is finally here.
+        </p>
+
+        <!-- 3D Gift Box Graphic -->
+        <div class="relative w-40 h-40 mb-8 cursor-pointer group flex items-center justify-center">
+          <div class="absolute inset-0 bg-pink-500/20 rounded-full blur-2xl group-hover:bg-pink-500/35 transition-all"></div>
+          
+          <svg class="w-32 h-32 transform group-hover:scale-105 transition-transform duration-300 filter drop-shadow-2xl" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="25" y="45" width="70" height="55" rx="8" fill="url(#giftGrad)" stroke="rgba(255,255,255,0.3)" stroke-width="2" />
+            <rect x="20" y="35" width="80" height="15" rx="5" fill="#f43f5e" stroke="rgba(255,255,255,0.4)" stroke-width="2" />
+            <rect x="54" y="35" width="12" height="65" fill="#ffd166" />
+            <rect x="25" y="65" width="70" height="12" fill="#ffd166" />
+            <path d="M45 35C45 22 56 22 60 35C64 22 75 22 75 35" stroke="#ffd166" stroke-width="8" stroke-linecap="round" fill="none" />
+            <defs>
+              <linearGradient id="giftGrad" x1="25" y1="45" x2="95" y2="100" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#fb7185" />
+                <stop offset="1" stop-color="#e11d48" />
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+
+        <button 
+          id="btn-open-surprise" 
+          class="shimmer-btn px-8 py-4 rounded-full bg-gradient-to-r from-rose-500 via-pink-500 to-amber-400 text-white font-medium text-lg shadow-xl shadow-pink-500/30 hover:shadow-pink-500/50 hover:scale-105 active:scale-95 transition-all flex items-center gap-3"
+        >
+          <span>Tap to open your surprise</span>
+          <span class="text-xl">🎁</span>
+        </button>
+      </div>
+
+    </section>
+
+    <!-- ========================================================================
+         SCREEN 2: MAKE A WISH (THE VIRTUAL CAKE)
+         ======================================================================== -->
+    <section id="screen-cake" class="section-screen flex-col items-center text-center">
+      
+      <div id="cake-wish-prompt" class="transition-opacity duration-300">
+        <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass-pill text-xs font-semibold tracking-wider text-pink-300 uppercase mb-4 shadow-sm">
+          <span>🕯️</span>
+          <span>Step 1 of 8</span>
+        </div>
+
+        <h2 class="font-serif text-3xl sm:text-4xl font-bold text-white mb-2">
+          Make a Birthday Wish
+        </h2>
+        <p class="text-sm sm:text-base text-slate-300 max-w-xs mx-auto mb-8">
+          Close your eyes, make your deepest wish, and tap the candle to blow it out!
+        </p>
+      </div>
+
+      <div id="cake-success" class="hidden opacity-0 flex-col items-center transition-all duration-700 mb-6">
+        <h2 class="font-serif text-3xl sm:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-300 via-rose-300 to-amber-200 mb-2">
+          Happy Birthday, <span class="celebrant-name">babyy</span>! 🎂
+        </h2>
+        <p class="text-base sm:text-lg text-pink-200/90 font-light max-w-sm">
+          May all your sweet wishes come true this year! ✨
+        </p>
+      </div>
+
+      <div class="cake-container my-4 relative inline-flex items-center justify-center">
+        <!-- Candle planted directly into the top tier of the cake -->
+        <div 
+          id="candle-wrapper" 
+          class="absolute z-20 flex flex-col items-center cursor-pointer select-none transition-transform hover:scale-105 active:scale-95" 
+          style="left: 50%; bottom: calc(67.5% - 4px); transform: translateX(-50%);"
+          title="Tap candle to blow it out!"
+        >
+          <div id="candle-flame" class="flame" title="Tap candle to blow it out!"></div>
+          <div id="smoke-wisp" class="smoke-wisp"></div>
+          <div class="candle-wick"></div>
+          <div class="candle-stick"></div>
+        </div>
+
+        <svg class="w-64 h-48 sm:w-72 sm:h-52 filter drop-shadow-xl block" viewBox="0 0 280 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <ellipse cx="140" cy="185" rx="125" ry="12" fill="#e2e8f0" opacity="0.8" />
+          <ellipse cx="140" cy="182" rx="120" ry="10" fill="#ffffff" />
+          <rect x="45" y="115" width="190" height="65" rx="8" fill="#fdf0ed" />
+          <rect x="45" y="165" width="190" height="15" rx="4" fill="#fbcfe8" />
+          <path d="M45 118C55 130 65 118 75 128C85 138 95 120 105 132C115 140 125 122 135 130C145 138 155 122 165 130C175 138 185 120 195 132C205 140 215 122 225 130C230 125 235 120 235 118" fill="#f472b6" />
+          <rect x="75" y="65" width="130" height="55" rx="6" fill="#fff5f5" />
+          <rect x="75" y="105" width="130" height="15" rx="3" fill="#fbcfe8" />
+          <path d="M75 68C85 80 95 68 105 78C115 88 125 70 135 82C145 90 155 72 165 80C175 88 185 70 195 80C200 75 205 70 205 68" fill="#ec4899" />
+          <!-- Cherries framing the center candle -->
+          <circle cx="102" cy="62" r="7" fill="#e11d48" />
+          <circle cx="178" cy="62" r="7" fill="#e11d48" />
+          <!-- Frosting dollop at candle base -->
+          <ellipse cx="140" cy="66" rx="10" ry="3.5" fill="#fbcfe8" />
+          <!-- Sparkles / Sprinkles on cake tier -->
+          <circle cx="80" cy="145" r="2.5" fill="#fbbf24" />
+          <circle cx="110" cy="155" r="2.5" fill="#fbbf24" />
+          <circle cx="140" cy="148" r="2.5" fill="#fbbf24" />
+          <circle cx="170" cy="152" r="2.5" fill="#fbbf24" />
+          <circle cx="200" cy="145" r="2.5" fill="#fbbf24" />
+        </svg>
+      </div>
+
+      <button 
+        id="btn-cake-continue" 
+        class="mt-8 px-8 py-3.5 rounded-full bg-gradient-to-r from-rose-500 to-pink-500 text-white font-medium text-base shadow-lg shadow-pink-500/30 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+      >
+        <span>Continue the Journey</span>
+        <span>→</span>
+      </button>
+
+    </section>
+
+    <!-- ========================================================================
+         SCREEN 3: POP THE BALLOONS (REASONS WE LOVE YOU)
+         ======================================================================== -->
+    <section id="screen-balloons" class="section-screen flex-col items-center text-center">
+      
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass-pill text-xs font-semibold tracking-wider text-pink-300 uppercase mb-3 shadow-sm">
+        <span>🎈</span>
+        <span>Step 2 of 8</span>
+      </div>
+
+      <h2 class="font-serif text-3xl sm:text-4xl font-bold text-white mb-2">
+        Pop the Balloons
+      </h2>
+      <p class="text-sm sm:text-base text-slate-300 max-w-xs mx-auto mb-4">
+        Pop every balloon to unlock reasons why you are so special to us! 💖
+      </p>
+
+      <div class="glass-pill px-4 py-1.5 rounded-full text-xs font-medium text-pink-200 mb-8 inline-flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-pink-400 animate-ping"></span>
+        <span id="balloons-progress-text">0 of 6 popped</span>
+      </div>
+
+      <div id="balloons-container" class="grid grid-cols-3 gap-y-8 gap-x-2 sm:gap-x-6 w-full max-w-sm mx-auto mb-10 justify-items-center"></div>
+
+      <button 
+        id="btn-balloons-continue" 
+        class="hidden px-8 py-3.5 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 text-white font-medium text-base shadow-xl shadow-purple-500/30 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+      >
+        <span>Walk Down Memory Lane</span>
+        <span>→</span>
+      </button>
+
+      <!-- Glassmorphic Modal for Revealed Reason -->
+      <div id="reason-modal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm items-center justify-center p-4">
+        <div class="glass-panel-warm rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center relative border border-pink-200/30 shadow-2xl">
+          <div class="w-12 h-12 rounded-full bg-pink-500/20 text-pink-300 flex items-center justify-center mx-auto mb-4 text-2xl">
+            💝
+          </div>
+          <h3 id="modal-reason-title" class="font-serif text-2xl font-bold text-white mb-3">Reason</h3>
+          <p id="modal-reason-text" class="text-slate-200 text-base leading-relaxed mb-6 font-light"></p>
+          <button 
+            id="modal-reason-close" 
+            class="px-6 py-2.5 rounded-full bg-pink-500/80 hover:bg-pink-500 text-white text-sm font-medium transition-all shadow-md"
+          >
+            Keep Popping ✨
+          </button>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ========================================================================
+         SCREEN 4: A WALK DOWN MEMORY LANE (PHOTO GALLERY)
+         ======================================================================== -->
+    <section id="screen-gallery" class="section-screen flex-col items-center text-center">
+      
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass-pill text-xs font-semibold tracking-wider text-pink-300 uppercase mb-3 shadow-sm">
+        <span>📸</span>
+        <span>Step 3 of 8</span>
+      </div>
+
+      <h2 class="font-serif text-3xl sm:text-4xl font-bold text-white mb-2">
+        A Walk Down Memory Lane
+      </h2>
+      <p class="text-sm sm:text-base text-slate-300 max-w-xs mx-auto mb-4">
+        A few cherished memories that make this journey with you unforgettable.
+      </p>
+
+      <!-- Fairy String Lights -->
+      <div class="fairy-string-container mb-2">
+        <div class="fairy-wire"></div>
+        <div class="fairy-bulb" style="left: 8%; background: #ffd166; color: #ffd166; animation-delay: 0.2s;"></div>
+        <div class="fairy-bulb" style="left: 20%; background: #ff758f; color: #ff758f; animation-delay: 0.8s;"></div>
+        <div class="fairy-bulb" style="left: 35%; background: #ffd166; color: #ffd166; animation-delay: 0.1s;"></div>
+        <div class="fairy-bulb" style="left: 50%; background: #70d6ff; color: #70d6ff; animation-delay: 0.6s;"></div>
+        <div class="fairy-bulb" style="left: 65%; background: #ffd166; color: #ffd166; animation-delay: 1.2s;"></div>
+        <div class="fairy-bulb" style="left: 80%; background: #ff758f; color: #ff758f; animation-delay: 0.4s;"></div>
+        <div class="fairy-bulb" style="left: 94%; background: #ffd166; color: #ffd166; animation-delay: 0.9s;"></div>
+      </div>
+
+      <!-- Gallery Header Tools: Counter Badge & Hint -->
+      <div class="flex flex-col items-center justify-center gap-2 mb-6 px-1">
+        <span id="gallery-counter-badge" class="glass-pill px-4 py-1.5 rounded-full text-xs font-semibold text-pink-300 flex items-center gap-1.5 shadow-sm">
+          <span>📸</span>
+          <span id="gallery-count-text">25 Memories Captured</span>
+        </span>
+        <p class="text-xs text-slate-300/80 italic">Tap any photo to view in full size ✨</p>
+      </div>
+
+      <!-- Polaroid Scrapbook Grid Container (All 25 Photos) -->
+      <div 
+        id="polaroid-gallery-grid" 
+        class="polaroid-grid-container max-w-3xl w-full px-2 sm:px-4"
+      ></div>
+
+      <!-- Continue to Section 5 Button -->
+      <button 
+        id="btn-gallery-continue" 
+        class="mt-6 px-8 py-3.5 rounded-full bg-gradient-to-r from-rose-500 via-pink-500 to-amber-400 text-white font-medium text-base shadow-xl shadow-pink-500/30 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+      >
+        <span>Open the Letter</span>
+        <span>💌</span>
+      </button>
+
+      <!-- Enhanced Lightbox Modal with Next/Previous Browsing -->
+      <div id="lightbox-modal" class="fixed inset-0 z-50 hidden bg-black/90 backdrop-blur-md items-center justify-center p-3 sm:p-6">
+        <!-- Close Button -->
+        <button id="lightbox-close" class="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center font-bold text-lg backdrop-blur z-30 transition-all" aria-label="Close photo">
+          ✕
+        </button>
+
+        <!-- Previous Photo Arrow -->
+        <button id="lightbox-prev" class="absolute left-2 sm:left-6 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-black/40 hover:bg-black/70 text-white flex items-center justify-center font-bold text-lg border border-white/20 backdrop-blur z-30 transition-all hover:scale-110" aria-label="Previous image">
+          ◀
+        </button>
+
+        <!-- Next Photo Arrow -->
+        <button id="lightbox-next" class="absolute right-2 sm:right-6 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-black/40 hover:bg-black/70 text-white flex items-center justify-center font-bold text-lg border border-white/20 backdrop-blur z-30 transition-all hover:scale-110" aria-label="Next image">
+          ▶
+        </button>
+
+        <!-- Lightbox Content Card -->
+        <div class="relative max-w-xl w-full bg-white rounded-2xl p-4 sm:p-6 shadow-2xl flex flex-col items-center animate-in zoom-in-95 duration-200">
+          <img id="lightbox-img" src="" alt="Enlarged memory" class="w-full max-h-[68vh] object-contain rounded-lg shadow-inner bg-slate-900" />
+          <div id="lightbox-caption" class="mt-4 text-center"></div>
+          <div id="lightbox-counter" class="text-[11px] font-semibold text-slate-400 mt-1 uppercase tracking-wider">Photo 1 of 25</div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ========================================================================
+         SCREEN 5: THE FINAL SURPRISE (THE BIRTHDAY LETTER)
+         ======================================================================== -->
+    <section id="screen-letter" class="section-screen flex-col items-center text-center relative">
+      
+      <div id="floating-hearts-bg" class="absolute inset-0 pointer-events-none overflow-hidden"></div>
+
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass-pill text-xs font-semibold tracking-wider text-pink-300 uppercase mb-3 shadow-sm">
+        <span>💌</span>
+        <span>Step 4 of 8</span>
+      </div>
+
+      <h2 class="font-serif text-3xl sm:text-4xl font-bold text-white mb-2">
+        A Letter For You
+      </h2>
+      <p class="text-sm sm:text-base text-slate-300 max-w-xs mx-auto mb-8">
+        Someone wrote you a letter. Tap the envelope to open it.
+      </p>
+
+      <!-- 3D Envelope -->
+      <div class="envelope-stage mb-8">
+        <div id="digital-envelope" class="envelope" title="Tap to open the letter">
+          <div class="envelope-flap"></div>
+          <div id="wax-seal" class="wax-seal" title="Break the wax seal">
+            <span>B</span>
+          </div>
+          <div class="letter-sheet-preview"></div>
+          <div class="envelope-pocket">
+            <div class="envelope-pocket-left"></div>
+            <div class="envelope-pocket-right"></div>
+            <div class="envelope-pocket-bottom"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Parchment Letter -->
+      <div id="parchment-letter-container" class="hidden w-full max-w-md parchment-letter rounded-xl p-6 sm:p-8 flex-col text-left shadow-2xl border border-amber-200/50 mb-8 animate-in fade-in duration-700">
+        <h3 id="letter-greeting" class="font-serif text-2xl sm:text-3xl font-bold text-amber-950 mb-6"></h3>
+        <div id="letter-body" class="space-y-4"></div>
+        <div class="mt-8 pt-4 border-t border-amber-900/15 text-right">
+          <p id="letter-closing" class="font-serif italic text-amber-900 text-lg"></p>
+          <p id="letter-signature" class="font-script text-3xl sm:text-4xl text-rose-800 mt-2"></p>
+        </div>
+
+        <!-- Button to Proceed to Step 6: Scratch Card -->
+        <div class="mt-8 pt-4 border-t border-amber-900/10 flex justify-center">
+          <button 
+            id="btn-letter-continue" 
+            class="px-8 py-3.5 rounded-full bg-gradient-to-r from-amber-600 via-rose-500 to-pink-500 text-white font-medium text-base shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+          >
+            <span>Reveal Your Real Present</span>
+            <span>🎁</span>
+          </button>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ========================================================================
+         SCREEN 6: THE SCRATCH CARD (THE REAL GIFT REVEAL)
+         ======================================================================== -->
+    <section id="screen-scratch" class="section-screen flex-col items-center text-center">
+      
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass-pill text-xs font-semibold tracking-wider text-amber-300 uppercase mb-3 shadow-sm">
+        <span>🎫</span>
+        <span>Step 5 of 8</span>
+      </div>
+
+      <h2 class="font-serif text-3xl sm:text-4xl font-bold text-white mb-2">
+        Your Real Present
+      </h2>
+      <p class="text-sm sm:text-base text-slate-300 max-w-xs mx-auto mb-4">
+        I couldn't just give you a digital gift... Scratch below to reveal your real present! ✨
+      </p>
+
+      <div class="glass-pill px-4 py-1.5 rounded-full text-xs font-medium text-amber-200 mb-6 inline-flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+        <span id="scratch-progress">0% scratched</span>
+      </div>
+
+      <!-- Scratch Card Component -->
+      <div class="scratch-card-wrapper mb-8">
+        <!-- Revealed Voucher Underneath -->
+        <div class="ticket-container">
+          <div class="flex items-center justify-between border-b border-amber-300/60 pb-2">
+            <span id="voucher-badge" class="text-[10px] font-bold uppercase tracking-widest bg-amber-500 text-white px-2 py-0.5 rounded">
+              OFFICIAL BIRTHDAY VOUCHER
+            </span>
+            <span class="text-xs font-bold text-amber-900">★ VIP ACCESS ★</span>
+          </div>
+
+          <div class="my-auto py-2">
+            <h3 id="voucher-title" class="font-serif text-xl sm:text-2xl font-bold text-amber-950 leading-tight mb-1">
+              A Weekend Getaway & Candlelight Dinner 🎫✨
+            </h3>
+            <p id="voucher-subtitle" class="text-xs sm:text-sm text-amber-800/90 leading-snug">
+              Pack your bags! A romantic weekend trip + dinner at your favorite restaurant.
+            </p>
+          </div>
+
+          <div class="border-t border-dashed border-amber-400/80 pt-2 flex items-center justify-between">
+            <div class="text-left">
+              <span class="block text-[9px] uppercase tracking-wider text-amber-700/80">Voucher Code</span>
+              <span id="voucher-code" class="font-mono font-bold text-xs text-amber-950">LOVE-SUSAN-2026</span>
+            </div>
+            <p id="voucher-fine-print" class="text-[9px] text-amber-700/80 italic text-right max-w-[170px]">
+              No expiration date • Unlimited cuddles included
+            </p>
+          </div>
+        </div>
+
+        <!-- HTML5 Canvas Scratch-Off Layer -->
+        <canvas id="scratch-canvas" class="scratch-canvas"></canvas>
+      </div>
+
+      <!-- Continue to Bouquet -->
+      <button 
+        id="btn-scratch-continue" 
+        class="hidden px-8 py-3.5 rounded-full bg-gradient-to-r from-emerald-500 via-teal-500 to-pink-500 text-white font-medium text-base shadow-xl shadow-teal-500/30 hover:scale-105 active:scale-95 transition-all items-center gap-2"
+      >
+        <span>Plant Our Garden</span>
+        <span>🌸</span>
+      </button>
+
+    </section>
+
+    <!-- ========================================================================
+         SCREEN 7: THE VIRTUAL BOUQUET
+         ======================================================================== -->
+    <section id="screen-bouquet" class="section-screen flex-col items-center text-center">
+      
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass-pill text-xs font-semibold tracking-wider text-emerald-300 uppercase mb-3 shadow-sm">
+        <span>🌱</span>
+        <span>Step 6 of 8</span>
+      </div>
+
+      <h2 class="font-serif text-3xl sm:text-4xl font-bold text-white mb-2">
+        The Virtual Bouquet
+      </h2>
+      <p id="bouquet-subtitle" class="text-sm sm:text-base text-slate-300 max-w-xs mx-auto mb-4">
+        You make everything grow beautifully. Tap each seed to plant our garden.
+      </p>
+
+      <div class="glass-pill px-4 py-1.5 rounded-full text-xs font-medium text-emerald-200 mb-6 inline-flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+        <span id="bouquet-progress">0 of 4 flowers bloomed</span>
+      </div>
+
+      <!-- Garden Bed Container -->
+      <div id="garden-bed" class="garden-bed mb-6"></div>
+
+      <!-- Completion Message -->
+      <div id="bouquet-completion" class="hidden flex-col items-center mb-6 animate-in fade-in duration-500">
+        <p class="font-serif text-2xl sm:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-300 via-rose-300 to-amber-200">
+          Happy Birthday to my favorite flower. 🌸
+        </p>
+      </div>
+
+      <!-- Continue to Soundtrack -->
+      <button 
+        id="btn-bouquet-continue" 
+        class="hidden px-8 py-3.5 rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-600 text-white font-medium text-base shadow-xl shadow-purple-500/30 hover:scale-105 active:scale-95 transition-all items-center gap-2"
+      >
+        <span>Our Soundtrack</span>
+        <span>🎶</span>
+      </button>
+
+    </section>
+
+    <!-- ========================================================================
+         SCREEN 8: OUR SOUNDTRACK (RETRO VINYL RECORD PLAYER)
+         ======================================================================== -->
+    <section id="screen-soundtrack" class="section-screen flex-col items-center text-center relative">
+      
+      <!-- Floating Notes Container -->
+      <div id="music-notes-container" class="absolute inset-0 pointer-events-none overflow-hidden"></div>
+
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass-pill text-xs font-semibold tracking-wider text-pink-300 uppercase mb-3 shadow-sm">
+        <span>🎵</span>
+        <span>Step 7 of 8</span>
+      </div>
+
+      <h2 class="font-serif text-3xl sm:text-4xl font-bold text-white mb-2">
+        Our Soundtrack
+      </h2>
+      <p class="text-sm sm:text-base text-slate-300 max-w-xs mx-auto mb-6">
+        Every good movie has a soundtrack. Here is ours. Tap the record to play! ✨
+      </p>
+
+      <!-- Retro Vinyl Turntable Player -->
+      <div class="turntable-chassis mb-6">
+        <div class="turntable-platter">
+          <!-- Vinyl Record Disc -->
+          <div id="vinyl-disc" class="vinyl-disc" title="Tap to spin record">
+            <div class="vinyl-sheen"></div>
+            <!-- Center Album Label -->
+            <div class="vinyl-label">
+              <span class="text-[9px] uppercase tracking-wider font-bold">Side A</span>
+              <span id="soundtrack-title" class="text-[11px] font-serif font-bold leading-tight px-1">Our Song</span>
+              <span id="soundtrack-artist" class="text-[8px] opacity-90 truncate max-w-[70px]">Susan & Nikhil</span>
+              <div class="vinyl-center-hole"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Turntable Tonearm -->
+        <div id="tonearm" class="tonearm">
+          <div class="tonearm-base"></div>
+          <div class="tonearm-arm"></div>
+          <div class="tonearm-head"></div>
+        </div>
+      </div>
+
+      <!-- Play / Pause Vinyl Button -->
+      <button 
+        id="btn-vinyl-play" 
+        class="mb-6 px-7 py-3 rounded-full bg-gradient-to-r from-rose-500 to-pink-500 text-white font-medium text-sm shadow-lg shadow-pink-500/30 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+      >
+        <span>▶ Play Our Song</span>
+      </button>
+
+      <!-- Romantic Commentary & Story Lyrics Box -->
+      <div class="w-full max-w-md glass-panel rounded-2xl p-5 mb-8 text-left">
+        <div class="flex items-center gap-2 mb-3 pb-2 border-b border-white/10">
+          <span class="text-amber-300 text-lg">✨</span>
+          <span class="text-xs uppercase tracking-widest text-slate-300 font-semibold">Memories in Melody</span>
+        </div>
+        <div id="soundtrack-lyrics-list" class="space-y-3">
+          <!-- Injected via config.js -->
+        </div>
+      </div>
+
+      <!-- Continue to Video Message -->
+      <div class="flex flex-col items-center gap-3">
+        <button 
+          id="btn-soundtrack-continue" 
+          class="px-8 py-3.5 rounded-full bg-gradient-to-r from-pink-500 via-rose-500 to-amber-400 text-white font-medium text-base shadow-xl shadow-pink-500/30 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+        >
+          <span>A Special Guest Awaits</span>
+          <span>🐾</span>
+        </button>
+      </div>
+
+    </section>
+
+    <!-- ========================================================================
+         SCREEN 9: A SPECIAL GUEST (THE VIDEO MESSAGE)
+         ======================================================================== -->
+    <section id="screen-video" class="section-screen flex-col items-center text-center relative">
+      
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass-pill text-xs font-semibold tracking-wider text-pink-300 uppercase mb-3 shadow-sm">
+        <span>🐾</span>
+        <span>Grand Finale</span>
+      </div>
+
+      <h2 class="font-serif text-3xl sm:text-4xl font-bold text-white mb-2">
+        A Special Guest
+      </h2>
+      <p id="video-tagline" class="text-sm sm:text-base text-slate-300 max-w-xs mx-auto mb-6">
+        Wait... a very special guest wants to say Happy Birthday too! 🐾
+      </p>
+
+      <!-- Video Container with Floating Effect & Custom Controls -->
+      <div id="video-wrapper" class="video-frame-container video-floating-effect mb-6">
+        <!-- HTML5 Video Player -->
+        <video 
+          id="birthday-video" 
+          class="video-player-element" 
+          playsinline 
+          webkit-playsinline 
+          preload="metadata"
+        >
+          <!-- Primary Source: local file assets/video/Final_meow.mp4 -->
+          <source src="assets/video/Final_meow.mp4" type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
+
+        <!-- Custom Play Button Overlay -->
+        <div id="video-overlay" class="video-play-overlay">
+          <div class="video-play-btn group">
+            <svg class="w-8 h-8 text-white ml-1 filter drop-shadow" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M8 5v14l11-7z"/>
+            </svg>
+          </div>
+          <p class="text-xs font-medium text-white/95 mt-3 tracking-wide drop-shadow flex items-center gap-1.5">
+            <span>Tap to Play Video</span>
+            <span>🐾</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- Video Caption -->
+      <p id="video-caption" class="text-sm font-serif italic text-pink-200/90 mb-8 max-w-xs text-center">
+        A special birthday greeting from our favorite little friend! 🐱💖
+      </p>
+
+      <!-- Grand Finale Relive Journey Button -->
+      <div class="flex flex-col items-center gap-3">
+        <button 
+          id="btn-replay-all" 
+          class="px-8 py-3.5 rounded-full glass-pill text-white/90 hover:text-white hover:bg-white/20 transition-all text-sm font-medium flex items-center gap-2 shadow-lg"
+        >
+          <span>↺ Relive the Surprise from the Beginning</span>
+        </button>
+        <p class="text-xs text-slate-400 mt-2">Made with all my ❤️ for Susan</p>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ==========================================================================
+       JAVASCRIPT SCRIPTS
+       ========================================================================== -->
+  <!-- 1. Centralized Configuration (Edit your custom texts, images & dates here) -->
+  <script src="js/config.js"></script>
+  <!-- 2. Main Application Logic & Interactivity -->
+  <script src="js/app.js"></script>
+
+</body>
+</html>
